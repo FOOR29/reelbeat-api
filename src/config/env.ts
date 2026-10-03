@@ -12,4 +12,6 @@ export const env = {
     port: Number(process.env.PORT) || 3000,
     lastfmApiKey: requireEnv("LASTFM_API_KEY"),
     lastfmUser: requireEnv("LASTFM_USER"),
+    traktClientId: requireEnv("TRAKT_CLIENT_ID"),
+    traktUser: requireEnv("TRAKT_USER"),
 };
