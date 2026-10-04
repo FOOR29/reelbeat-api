@@ -53,6 +53,7 @@ export interface NowPlaying {
     image: string | null;
     url: string;
     playedAt: string | null;
+    artistImage: string | null;
 }
 
 export interface TopArtist {
@@ -60,6 +61,7 @@ export interface TopArtist {
     name: string;
     playcount: number;
     url: string;
+    image: string | null;
 }
 
 export interface TopTrack {
@@ -69,6 +71,7 @@ export interface TopTrack {
     playcount: number;
     durationSeconds: number;
     url: string;
+    artistImage: string | null;
 }
 
 export interface ListeningTime {

@@ -1,5 +1,6 @@
 import { env } from "../config/env.js";
 import { ExternalApiError } from "../errors/app-errors.js";
+import { getArtistImage } from "./deezer.service.js";
 import type {
     LastfmRecentTracksResponse,
     LastfmTopArtistsResponse,
@@ -11,6 +12,15 @@ import type {
 } from "../types/lastfm.types.js";
 
 const BASE_URL = "https://ws.audioscrobbler.com/2.0/";
+
+const LASTFM_PLACEHOLDER = "2a96cbd8b46e442fc41c2b86b821562f";
+
+function cleanImage(url: string | undefined): string | null {
+    if (!url || url.includes(LASTFM_PLACEHOLDER)) {
+        return null;
+    }
+    return url;
+}
 
 async function callLastfm<T>(
     method: string,
@@ -45,13 +55,15 @@ export async function getNowPlaying(): Promise<NowPlaying | null> {
     }
 
     const uts = track.date?.uts;
+    const artist = track.artist["#text"];
 
     return {
         isPlaying: track["@attr"]?.nowplaying === "true",
         name: track.name,
-        artist: track.artist["#text"],
+        artist,
+        artistImage: await getArtistImage(artist),
         album: track.album["#text"] || null,
-        image: track.image.at(-1)?.["#text"] || null,
+        image: cleanImage(track.image.at(-1)?.["#text"]),
         url: track.url,
         playedAt: uts ? new Date(Number(uts) * 1000).toISOString() : null,
     };
@@ -63,12 +75,15 @@ export async function getTopArtists(period: string, limit: number): Promise<TopA
         limit: String(limit),
     });
 
-    return body.topartists.artist.map((artist) => ({
-        rank: Number(artist["@attr"].rank),
-        name: artist.name,
-        playcount: Number(artist.playcount),
-        url: artist.url,
-    }));
+    return Promise.all(
+        body.topartists.artist.map(async (artist) => ({
+            rank: Number(artist["@attr"].rank),
+            name: artist.name,
+            playcount: Number(artist.playcount),
+            url: artist.url,
+            image: await getArtistImage(artist.name),
+        })),
+    );
 }
 
 export async function getTopTracks(period: string, limit: number): Promise<TopTrack[]> {
@@ -77,14 +92,17 @@ export async function getTopTracks(period: string, limit: number): Promise<TopTr
         limit: String(limit),
     });
 
-    return body.toptracks.track.map((track) => ({
-        rank: Number(track["@attr"].rank),
-        name: track.name,
-        artist: track.artist.name,
-        playcount: Number(track.playcount),
-        durationSeconds: Number(track.duration),
-        url: track.url,
-    }));
+    return Promise.all(
+        body.toptracks.track.map(async (track) => ({
+            rank: Number(track["@attr"].rank),
+            name: track.name,
+            artist: track.artist.name,
+            artistImage: await getArtistImage(track.artist.name),
+            playcount: Number(track.playcount),
+            durationSeconds: Number(track.duration),
+            url: track.url,
+        })),
+    );
 }
 
 export async function getListeningTime(period: string): Promise<ListeningTime> {
@@ -116,7 +134,6 @@ export async function getListeningTime(period: string): Promise<ListeningTime> {
             }
         }
     }
-
     return {
         period,
         totalSeconds,
