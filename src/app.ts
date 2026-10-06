@@ -6,6 +6,9 @@ import { errorHandler } from "./middlewares/error-handler.js";
 const app = express();
 
 app.use(cors());
+app.get("/health", (req, res) => {
+    res.json({ status: "ok" });
+});
 app.use("/api", routes);
 
 app.use((req, res) => {
